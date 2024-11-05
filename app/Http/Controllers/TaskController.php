@@ -48,7 +48,6 @@ class TaskController extends Controller
     {
         $taskData = $request->validated();
         $this->taskService->createTask($taskData);
-        Cache::forget('tasks');
         return redirect()->route('home')->with('success', 'Task created successfully');
     }
 
@@ -78,16 +77,13 @@ class TaskController extends Controller
     public function update(UpdateTaskRequest $request, Task $task)
     {
         $taskData = $request->validated();
-        $task = $this->taskService->updateTask($taskData, $task);
-        Cache::forget('tasks');
+        $this->taskService->updateTask($taskData, $task);
         return redirect()->route('home')->with('success', 'Task updated successfully');
 
     }
     public function updateStatus(Task $task)
     {
-
         $this->taskService->updateStatus($task);
-
         return redirect()->route('home')->with('success', 'Task Status Updated Successfully');
     }
 
@@ -97,7 +93,6 @@ class TaskController extends Controller
     public function destroy(Task $Task)
     {
         $this->taskService->deleteTask($Task);
-        Cache::forget('tasks');
         return redirect()->route('home')->with('success', 'Task deleted successfully');
 
     }
