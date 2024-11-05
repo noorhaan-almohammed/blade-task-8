@@ -24,6 +24,7 @@ class TaskService
             'due_date' => $fieldInputs['due_date'],
             'owner_id' => auth()->user()->id,
             ]);
+            Cache::forget('tasks_' . Auth::id());
        return $task;
         } catch (Exception $e) {
             Log::error('Error creating Task: ' . $e->getMessage());
@@ -39,21 +40,30 @@ class TaskService
                 'due_date' => $taskData['due_date'] ?? $task->due_date,
            ];
            $task->update($data);
-           return $task;
+           Cache::forget('tasks_' . Auth::id());
         }
         catch(HttpException $e){
             Log::error('Error updating Task: ' . $e->getMessage());
-            throw new HttpResponseException(response()->json('You are not authorized to update this task.',403), );
+            abort( 403 , 'You are not authorized to update this task.');
         }
         catch (Exception $e) {
             Log::error('Error updating Task: ' . $e->getMessage());
-            throw new HttpResponseException(response()->json('there is something wrong in server',500), );
+            abort( 500 , 'Server Error');
         }
     }
     public function updateStatus($task){
+        try{
          $task->status_id = $task->status_id === 1 ? 2 : 1;
          $task->save();
-         return $task;
+         Cache::forget('tasks_' . Auth::id());
+        }catch(HttpException $e){
+            Log::error('Error updating Task: ' . $e->getMessage());
+            abort( 403 , 'You are not authorized to update this task.');
+        }
+        catch (Exception $e) {
+            Log::error('Error updating Task: ' . $e->getMessage());
+            abort( 500 , 'Server Error');
+        }
     }
     public function listTask(){
         try {
@@ -82,13 +92,13 @@ class TaskService
     {
         try {
             $Task->delete();
+            Cache::forget('tasks_' . Auth::id());
         } catch (ModelNotFoundException $e) {
             Log::error('Error finding Task: ' . $e->getMessage());
-            // throw new HttpResponseException(response()->json('Task not found',404), );
             abort(404,'Task not found');
         } catch (Exception $e) {
             Log::error('Error deleting Task: ' . $e->getMessage());
-            throw new HttpResponseException(response()->json('there is something wrong in server',500), );
+            abort( 500 , 'Server Error');
         }
     }
 
@@ -101,7 +111,7 @@ class TaskService
             return Task::onlyTrashed()->simplePaginate(10);
         } catch (Exception $e) {
             Log::error('Error trashed List Task: ' . $e->getMessage());
-            throw new HttpResponseException(response()->json('there is something wrong in server',500), );
+            abort( 500 , 'Server Error');
         }
     }
 
@@ -109,14 +119,13 @@ class TaskService
      * Restore a trashed (soft deleted) resource by its ID.
      *
      * @param  int  $id  The ID of the trashed Task to be restored.
-     * @return \App\Models\Task
      */
     public function restoreTask($id)
     {
         try {
             $Task = Task::onlyTrashed()->findOrFail($id);
             $Task->restore();
-            return $Task;
+            Cache::forget('tasks_' . Auth::id());
          } catch (ModelNotFoundException $e) {
                 Log::error('Error finding Task: ' . $e->getMessage());
                 abort(404 , 'Not Found');
@@ -140,6 +149,7 @@ class TaskService
                 throw new HttpResponseException(response()->json(['message' => 'You can not delete this task, You\'re not creator!'],403), );
             }
             $trashedTask->forceDelete();
+            Cache::forget('tasks_' . Auth::id());
         } catch (ModelNotFoundException $e) {
             Log::error('Error finding Task: ' . $e->getMessage());
             abort(404 , 'Not Found');
